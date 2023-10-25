@@ -1,0 +1,14 @@
+#!/bin/sh
+
+echo "Attempting to enable ufw..."
+ufw enable
+
+# Re-install ufw if files are not present (eg. if a volume mount is being used)
+if [ ! -d "/etc/ufw" ];
+then
+    echo "Re-installing ufw to re-add files to /etc/ufw..."
+    apk fix --reinstall ufw
+fi
+
+echo "Ready! Sitting in a /dev/null tail until container is stopped."
+tail -f /dev/null
