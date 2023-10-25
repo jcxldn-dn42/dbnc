@@ -5,6 +5,7 @@
 if [ ! -d "/etc/ufw/ufw.conf" ];
 then
     echo "Re-installing ufw to re-add files to /etc/ufw..."
+    mkdir -p /etc/ufw/applications.d
     apk fix --reinstall ufw
 fi
 
