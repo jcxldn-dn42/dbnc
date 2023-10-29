@@ -1,5 +1,14 @@
 #!/bin/sh
 
+if [[ ! -z "${IP4}" ]]; then
+    echo "Public IPs set! Adding loopback interface for published IPs..."
+
+    ip link add name lo-pub type dummy
+
+    ip addr add $IP6/128 dev lo-pub
+    ip addr add $IP4/24 dev lo-pub
+fi
+
 
 # Re-install ufw if files are not present (eg. if a volume mount is being used)
 if [ ! -d "/etc/ufw/ufw.conf" ];
