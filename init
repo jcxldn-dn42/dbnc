@@ -6,7 +6,7 @@ if [[ ! -z "${IP4}" ]]; then
     ip link add name lo-pub type dummy
 
     ip addr add $IP6/128 dev lo-pub
-    ip addr add $IP4/24 dev lo-pub
+    ip addr add $IP4/32 dev lo-pub
 
     ip link set lo-pub up
 fi
