@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --update ufw
+RUN apk add --update ufw bash
 
 
 ADD init /
