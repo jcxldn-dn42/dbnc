@@ -1,24 +1,38 @@
 #!/bin/sh
 
-if [[ ! -z "${IP4}" ]]; then
-    echo "Public IPs set! Adding loopback interface for published IPs..."
+ip link add name lo-pub type dummy
 
-    ip link add name lo-pub type dummy
+mapfile -t IP_ADDRS_LIST < <(echo $IP_ADDRS | tr "," "\n")
+for address in ${IP_ADDRS_LIST[@]}; do
+    ip addr add $address dev lo-pub
+done
 
-    ip addr add $IP6/128 dev lo-pub
-    ip addr add $IP4/32 dev lo-pub
-
-    ip link set lo-pub up
-fi
+ip link set lo-pub up
 
 
 # Re-install ufw if files are not present (eg. if a volume mount is being used)
-if [ ! -d "/etc/ufw/ufw.conf" ];
+if [ ! -f "/etc/ufw/ufw.conf" ];
 then
     echo "Re-installing ufw to re-add files to /etc/ufw..."
     mkdir -p /etc/ufw/applications.d
     apk fix --reinstall ufw
 fi
+
+
+# -----
+# Add forward rules for specified IP ranges
+# -----
+# (part 1): Convert the CSVs (FORWARD_IP_RANGES, FORWARD_INTERFACES) into an array
+mapfile -t FORWARD_IP_RANGES_LIST < <(echo $FORWARD_IP_RANGES | tr "," "\n")
+mapfile -t FORWARD_INTERFACES_LIST < <(echo $FORWARD_INTERFACES | tr "," "\n")
+
+# (part 2): Iterate over each item in the array and add a ufw routing rule for it
+for range in ${FORWARD_IP_RANGES_LIST[@]}; do
+    for interface in ${FORWARD_INTERFACES_LIST[@]}; do
+        echo "Adding routing rule for iface '$interface' for range '$range'"
+        ufw route allow in on $interface from $range out on $interface to $range
+    done
+done
 
 echo "Attempting to enable ufw..."
 ufw enable
