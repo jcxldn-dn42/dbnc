@@ -38,5 +38,12 @@ echo "Attempting to enable ufw..."
 ufw enable
 
 
+if [ -f "/pre-start.hook" ];
+then
+    echo "Found pre-start script! Running..."
+    chmod +x /pre-start.hook
+    /pre-start.hook
+fi
+
 echo "Ready! Sitting in a /dev/null tail until container is stopped."
 tail -f /dev/null
