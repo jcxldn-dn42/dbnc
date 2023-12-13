@@ -24,6 +24,7 @@ fi
 # -----
 # (part 1): Convert the CSVs (FORWARD_IP_RANGES, FORWARD_INTERFACES) into an array
 mapfile -t FORWARD_IP_RANGES_LIST < <(echo $FORWARD_IP_RANGES | tr "," "\n")
+mapfile -t FORWARD_IP_RANGES_NON_MAIN_LIST < <(echo $FORWARD_IP_RANGES_NON_MAIN | tr "," "\n")
 mapfile -t FORWARD_INTERFACES_LIST < <(echo $FORWARD_INTERFACES | tr "," "\n")
 mapfile -t FORWARD_IFACE_TO_LIST < <(echo $FORWARD_IFACE_TO | tr "," "\n")
 
@@ -33,12 +34,17 @@ for range in ${FORWARD_IP_RANGES_LIST[@]}; do
         echo "Adding routing rule for iface '$interface' for range '$range'"
         ufw route allow in on $interface from $range out on $interface to $range
     done
+    # Routing between eg. wireguard network and dn42 network as opposed to dn42 <--> dn42 (above)
     # Routing rules between eth0 and list (allow other containers to route TCP/UDP (icmp works anyways) via this one)
     for interface in ${FORWARD_IFACE_TO_LIST[@]}; do
-        echo "Adding routing rule for to iface '$interface' from iface '$FORWARD_IFACE_FROM' for range '$range'"
-        ufw route allow in on $FORWARD_IFACE_FROM from $range out on $interface to $range
-        echo "Adding routing rule for to iface '$FORWARD_IFACE_FROM' from iface '$interface for range '$range'"
-        ufw route allow in on $interface from $range out on $FORWARD_IFACE_FROM to $range
+        for range2 in ${FORWARD_IP_RANGES_NON_MAIN_LIST[@]}; do
+            echo "Adding routing rule for to iface '$interface' from iface '$FORWARD_IFACE_FROM' for range '$range'"
+            ufw route allow in on $FORWARD_IFACE_FROM from $range out on $interface to $range2
+            ufw route allow in on $FORWARD_IFACE_FROM from $range2 out on $interface to $range
+            echo "Adding routing rule for to iface '$FORWARD_IFACE_FROM' from iface '$interface for range '$range'"
+            ufw route allow in on $interface from $range out on $FORWARD_IFACE_FROM to $range2
+            ufw route allow in on $interface from $range2 out on $FORWARD_IFACE_FROM to $range
+        done
     done
 done
 
