@@ -25,7 +25,7 @@ fi
 # (part 1): Convert the CSVs (FORWARD_IP_RANGES, FORWARD_INTERFACES) into an array
 mapfile -t FORWARD_IP_RANGES_LIST < <(echo $FORWARD_IP_RANGES | tr "," "\n")
 mapfile -t FORWARD_INTERFACES_LIST < <(echo $FORWARD_INTERFACES | tr "," "\n")
-mapfile -t FORWARD_ETH0_TO_LIST < <(echo $FORWARD_ETH0_TO | tr "," "\n")
+mapfile -t FORWARD_IFACE_TO_LIST < <(echo $FORWARD_ETH0_TO | tr "," "\n")
 
 # (part 2): Iterate over each item in the array and add a ufw routing rule for it
 for range in ${FORWARD_IP_RANGES_LIST[@]}; do
@@ -35,10 +35,10 @@ for range in ${FORWARD_IP_RANGES_LIST[@]}; do
     done
     # Routing rules between eth0 and list (allow other containers to route TCP/UDP (icmp works anyways) via this one)
     for interface in ${FORWARD_ETH0_TO_LIST[@]}; do
-        echo "Adding routing rule for to iface '$interface' from iface 'eth0' for range '$range'"
-        ufw route allow in on eth0 from $range out on $interface to $range
-        echo "Adding routing rule for to iface 'eth0' from iface '$interface for range '$range'"
-        ufw route allow in on $interface from $range out on eth0 to $range
+        echo "Adding routing rule for to iface '$interface' from iface '$FORWARD_IFACE_FROM' for range '$range'"
+        ufw route allow in on $FORWARD_IFACE_FROM from $range out on $interface to $range
+        echo "Adding routing rule for to iface '$FORWARD_IFACE_FROM' from iface '$interface for range '$range'"
+        ufw route allow in on $interface from $range out on $FORWARD_IFACE_FROM to $range
     done
 done
 
